@@ -26,7 +26,7 @@ function parseArgs() {
 
     if (!inputFile || inputFile.startsWith('-')) {
         console.error('❌ Error: You must specify a file to compile as the first argument.');
-        console.log('💡 Usage: react-fly <file.js|jsx|ts|tsx> [-p <port>] [-rv <version>] [-w <boolean>]');
+        console.log('💡 Usage: react-on-fly <file.js|jsx|ts|tsx> [-p <port>] [-rv <version>] [-w <boolean>]');
         process.exit(1);
     }
 
@@ -70,7 +70,7 @@ async function ensureFileExists(inputFile: string) {
 }
 
 async function generateEntryFile(userComponentPath: string, reactVersion: string): Promise<{ bundlePath: string, tempDir: string, entryPath: string }> {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'react-fly-'));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'react-on-fly-'));
     const bundlePath = path.join(tempDir, 'bundle.js');
     const entryPath = path.join(tempDir, 'entry.jsx');
     const parsedVersion = parseInt(reactVersion.split('.')[0], 10);
@@ -167,7 +167,7 @@ async function installDependencies(missingDeps: Set<string>, tempDir: string, re
 
     await fs.writeFile(
         path.join(tempDir, 'package.json'),
-        JSON.stringify({ name: 'react-fly-temp', version: '1.0.0', dependencies: depsObj }, null, 2)
+        JSON.stringify({ name: 'react-on-fly-temp', version: '1.0.0', dependencies: depsObj }, null, 2)
     );
 
     let installCmd = 'npm install';

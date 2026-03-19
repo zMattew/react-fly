@@ -1,5 +1,5 @@
 {
-  "name": "react-fly",
+  "name": "react-on-fly",
   "version": "1.0.0",
   "description": "Compile and serve a react file on the fly",
   "engines": {
@@ -31,7 +31,7 @@
     "dev-server"
   ],
   "bin": {
-    "react-fly": "./dist/cli.js"
+    "react-on-fly": "./dist/cli.js"
   },
   "files": ["dist"],
   "scripts": {
