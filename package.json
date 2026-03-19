@@ -1,0 +1,38 @@
+{
+  "name": "react-fly",
+  "version": "1.0.0",
+  "description": "Compile and serve a react file on the fly",
+  "main": "dist/cli.js",
+  "author": "zMattew_",
+  "license": "MIT",
+  "keywords": [
+    "react",
+    "previewer",
+    "lightweight",
+    "compiler",
+    "serve",
+    "cli",
+    "esbuild",
+    "zero-config",
+    "single-file",
+    "runner",
+    "prototyping",
+    "tailwind",
+    "dev-server"
+  ],
+  "bin": {
+    "react-fly": "./dist/cli.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "esbuild": "^0.27.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^6.0.1-rc"
+  }
+}
