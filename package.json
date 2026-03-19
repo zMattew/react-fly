@@ -36,7 +36,8 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "tsc --noEmit"
   },
   "dependencies": {
     "esbuild": "^0.27.4"
