@@ -2,6 +2,10 @@
   "name": "react-fly",
   "version": "1.0.0",
   "description": "Compile and serve a react file on the fly",
+  "homepage": "https://github.com/zMattew/react-fly#readme",
+  "bugs": {
+    "url": "https://github.com/zMattew/react-fly/issues"
+  },
   "main": "dist/cli.js",
   "author": "zMattew_",
   "license": "MIT",
