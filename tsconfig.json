@@ -11,7 +11,8 @@
     "rootDir": "./src",
     "resolveJsonModule": true,
     "declaration": true,
-    "types": ["node"]
+    "types": ["node","bun","deno"],
+    "sourceMap": true,
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
