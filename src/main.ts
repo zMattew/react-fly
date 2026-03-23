@@ -1,25 +1,44 @@
 #!/usr/bin/env node
 import path from 'path';
-import fs from 'fs/promises';
-import http from 'http';
+import fs from 'node:fs/promises';
 import { build, context, type BuildOptions, type BuildContext } from 'esbuild';
 import os from 'os';
 import { builtinModules } from 'module';
 import { execSync } from 'child_process';
 
 async function main() {
+    const runtime = resolveRuntime()
     const { inputFile, PORT, reactVersion, watchMode } = parseArgs();
     const absoluteInputPath = await ensureFileExists(inputFile);
     const { entryPath, bundlePath, tempDir } = await generateEntryFile(absoluteInputPath, reactVersion);
     console.log('🔍 Scanning for missing dependencies...');
-    await resolveDependecies(entryPath, tempDir, reactVersion);
+    await resolveDependecies(entryPath, tempDir, reactVersion, runtime);
     console.log('⚡ Compiling...');
     const ctx = await bundleCode(entryPath, bundlePath, tempDir, watchMode);
-    createWebServer(PORT, bundlePath, watchMode);
-    setupCleanup(tempDir, ctx);
+    console.log(`⚙️  Starting server using ${runtime} runtime`)
+    createWebServer(PORT, bundlePath, watchMode, runtime).
+        finally(() => setupCleanup(tempDir, ctx));
 }
 
+function resolveRuntime() {
+    if (typeof Bun !== 'undefined') return 'bun';
+    if (typeof Deno !== 'undefined') return 'deno';
+    return 'node';
+}
 
+function getInstallCommand(runtime: string): string {
+    const userAgent = process.env.npm_config_user_agent || '';
+
+    if (userAgent.includes('bun')) return 'bun install';
+    if (userAgent.includes('deno')) return 'deno install --node-modules-dir';
+    if (userAgent.includes('pnpm')) return 'pnpm install';
+    if (userAgent.includes('yarn')) return 'yarn install';
+
+    if (runtime === 'bun') return 'bun install';
+    if (runtime === 'deno') return 'deno install --node-modules-dir';
+
+    return 'npm install';
+}
 
 function parseArgs() {
     const inputFile = process.argv[2];
@@ -97,10 +116,10 @@ ReactDOM.render(React.createElement(UserApp), container);
     return { bundlePath, tempDir, entryPath };
 }
 
-async function resolveDependecies(entryPath: string, tempDir: string, reactVersion: string) {
+async function resolveDependecies(entryPath: string, tempDir: string, reactVersion: string, runtime: string) {
     const missingDeps = await scanDependencies(entryPath);
     if (missingDeps.size > 0) {
-        await installDependencies(missingDeps, tempDir, reactVersion);
+        await installDependencies(missingDeps, tempDir, reactVersion, runtime);
     }
 }
 
@@ -150,7 +169,7 @@ async function scanDependencies(entryPath: string): Promise<Set<string>> {
     return missingDeps;
 }
 
-async function installDependencies(missingDeps: Set<string>, tempDir: string, reactVersion: string) {
+async function installDependencies(missingDeps: Set<string>, tempDir: string, reactVersion: string, runtime: string) {
     const depsObj: Record<string, string> = {};
     const depsArray = Array.from(missingDeps).map(dep => {
         if (dep === 'react' || dep === 'react-dom') {
@@ -161,30 +180,14 @@ async function installDependencies(missingDeps: Set<string>, tempDir: string, re
         return dep;
     });
 
-    console.log(
-        `⚛️  Using React version: ${reactVersion}
-📦 Installing missing dependencies: ${depsArray.join(', ')}...`);
-
     await fs.writeFile(
         path.join(tempDir, 'package.json'),
         JSON.stringify({ name: 'react-on-fly-temp', version: '1.0.0', dependencies: depsObj }, null, 2)
     );
-
-    let installCmd = 'npm install';
-    const userAgent = process.env.npm_config_user_agent || '';
-
-    // @ts-ignore
-    if (typeof Bun !== 'undefined' || userAgent.includes('bun')) {
-        installCmd = 'bun install';
-        // @ts-ignore
-    } else if (typeof Deno !== 'undefined') {
-        installCmd = 'deno install --node-modules-dir';
-    } else if (userAgent.includes('pnpm')) {
-        installCmd = 'pnpm install';
-    } else if (userAgent.includes('yarn')) {
-        installCmd = 'yarn install';
-    }
-
+    const installCmd = getInstallCommand(runtime)
+    console.log(
+        `⚛️  Using React version: ${reactVersion}
+📦 Installing missing dependencies with ${installCmd.split(' ')[0]}: ${depsArray.join(', ')}...`);
     execSync(installCmd, { cwd: tempDir, stdio: 'inherit' });
 }
 
@@ -209,63 +212,29 @@ async function bundleCode(entryPath: string, bundlePath: string, tempDir: string
     return ctx;
 }
 
-function createWebServer(PORT: number, bundlePath: string, watchMode: boolean): http.Server {
-    const server = http.createServer(async (req: http.IncomingMessage, res: http.ServerResponse) => {
-        req.on('error', () => { });
-
-        if (req.url === '/favicon.ico') {
-            if (!res.headersSent) res.writeHead(204);
-            return res.end();
+async function createWebServer(PORT: number, bundlePath: string, watchMode: boolean, runtime: string = 'node') {
+    const content = fs.readFile(bundlePath, 'utf8');
+    let server
+    switch (runtime) {
+        case 'bun': {
+            const { default: bunServer } = await import('./server/bun');
+            server = bunServer(PORT, watchMode, content);
+            break;
         }
-
-        if (req.url === '/bundle.js') {
-            try {
-                const content = await fs.readFile(bundlePath);
-                if (!res.headersSent) res.writeHead(200, { 'Content-Type': 'application/javascript' });
-                res.end(content);
-            } catch (err: any) {
-                if (err.code === 'ENOENT') {
-                    if (!res.headersSent) res.writeHead(404, { 'Content-Type': 'application/javascript' });
-                    res.end('console.error("Bundle not found. Check the terminal for build errors.");');
-                } else {
-                    if (!res.headersSent) res.writeHead(500, { 'Content-Type': 'application/javascript' });
-                    return res.end(`console.error("Error reading bundle: ${err instanceof Error ? err.message : String(err)}");`);
-                }
-            }
-        } else {
-            let usesTailwind = false;
-            try {
-                const bundleCode = await fs.readFile(bundlePath, 'utf8');
-                usesTailwind = /["'`][^"'`]*\b(bg-[a-z]+-\d+|text-[a-z]+-\d+|border-[a-z]+-\d+|[pm][trblxy]?-[0-9]+|w-[0-9]+|h-[0-9]+|flex|grid|rounded(?:-(?:sm|md|lg|xl|2xl|3xl|full|none))?)\b[^"'`]*["'`]/.test(bundleCode);
-            } catch (err) { }
-            const tailwindScript = usesTailwind ? '<script src="https://cdn.tailwindcss.com"></script>' : '';
-
-            if (!res.headersSent) res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(`
-        <!DOCTYPE html>
-        <html lang="en">
-          <head>
-            <meta charset="UTF-8" />
-            <title>React On The Fly</title>
-            <link rel="icon" href="data:," />
-            ${tailwindScript}
-          </head>
-          <body>
-            <div id="root"></div>
-            <script src="/bundle.js"></script>
-          </body>
-        </html>
-      `);
+        case 'deno': {
+            const { default: denoServer } = await import('./server/deno');
+            server = denoServer(PORT, watchMode, content);
+            break;
         }
-    });
-
-    server.listen(PORT, () => {
-        console.log(
-            `🚀 Ready! Your component is served at: http://localhost:${PORT}\n${watchMode ? '👀 Watching for file changes...' : ''}\nPress Ctrl+C to stop the process.`
-        );
-    });
-
-    return server;
+        case 'node':
+        default: {
+            const { default: nodeServer } = await import('./server/node');
+            server = nodeServer(PORT, watchMode, content);
+            break;
+        }
+    }
+    console.log(`🚀 Ready! Your component is served at: http://localhost:${PORT}\n${watchMode ? '👀 Watching for file changes...' : ''}\nPress Ctrl+C to stop the process.`);
+    return server
 }
 
 function setupCleanup(tempDir: string, ctx?: BuildContext) {
