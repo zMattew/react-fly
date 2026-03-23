@@ -1,6 +1,6 @@
 {
   "name": "react-on-fly",
-  "version": "1.0.1",
+  "version": "1.1.1",
   "description": "Compile and serve a react file on the fly",
   "engines": {
     "node": ">=18.0.0",
