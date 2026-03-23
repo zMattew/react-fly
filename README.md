@@ -1,4 +1,4 @@
-# 🦋 react-on-fly
+# 🚀 react-on-fly
 
 **Preview your React components on the fly!**
 
@@ -17,11 +17,11 @@ npx react-on-fly <path-to-file> -p <port-number> -rv <react-version> -w <watch-c
 Using `bunx` (Bun):
 
 ```bash
-bunx react-on-fly <path-to-file> -p <port-number> -rv <react-version> -w <watch-changes-boolean>
+bunx react-on-fly --bun <path-to-file> -p <port-number> -rv <react-version> -w <watch-changes-boolean>
 ```
 
 Using `dx` (Deno):
 
 ```bash
-dx react-on-fly <path-to-file> -p <port-number> -rv <react-version> -w <watch-changes-boolean>
+deno x react-on-fly <path-to-file> -p <port-number> -rv <react-version> -w <watch-changes-boolean>
 ```
