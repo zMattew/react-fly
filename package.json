@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/zMattew/react-fly/issues"
   },
-  "main": "dist/cli.js",
+  "main": "dist/main.js",
   "author": "zMattew_",
   "license": "MIT",
   "repository": "zMattew/react-fly",
@@ -31,7 +31,7 @@
     "dev-server"
   ],
   "bin": {
-    "react-on-fly": "./dist/cli.js"
+    "react-on-fly": "./dist/main.js"
   },
   "files": ["dist"],
   "scripts": {
