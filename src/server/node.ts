@@ -1,6 +1,6 @@
 import http from 'http';
 
-export default function nodeServer(PORT: number,watchMode: boolean,content:Promise<string>): http.Server {
+export default function nodeServer(PORT: number, content: Promise<string>): http.Server {
     const server = http.createServer(async (req: http.IncomingMessage, res: http.ServerResponse) => {
         req.on('error', () => { });
 

@@ -1,4 +1,4 @@
-export default function bunServer(PORT: number, watchMode: boolean, content: Promise<string>) {
+export default function bunServer(PORT: number, content: Promise<string>) {
     const server = Bun.serve({
         port: PORT,
         async fetch(req: Request) {

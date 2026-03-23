@@ -6,24 +6,24 @@ export function resolveRuntime() {
     if (typeof Bun !== 'undefined') return 'bun';
     if (typeof Deno !== 'undefined') return 'deno';
     return 'node';
-}export async function createWebServer(PORT: number, bundlePath: string, watchMode: boolean, runtime: string = 'node') {
+} export async function createWebServer(PORT: number, bundlePath: string, watchMode: boolean, runtime: string = 'node') {
     const content = readFile(bundlePath, 'utf8');
     let server;
     switch (runtime) {
         case 'bun': {
             const { default: bunServer } = await import('../server/bun');
-            server = bunServer(PORT, watchMode, content);
+            server = bunServer(PORT, content);
             break;
         }
         case 'deno': {
             const { default: denoServer } = await import('../server/deno');
-            server = denoServer(PORT, watchMode, content);
+            server = denoServer(PORT, content);
             break;
         }
         case 'node':
         default: {
             const { default: nodeServer } = await import('../server/node');
-            server = nodeServer(PORT, watchMode, content);
+            server = nodeServer(PORT, content);
             break;
         }
     }

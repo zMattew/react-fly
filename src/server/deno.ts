@@ -1,4 +1,4 @@
-export default async function denoServer(PORT: number, watchMode: boolean,content:Promise<string>) {
+export default async function denoServer(PORT: number, content:Promise<string>) {
     const server = Deno.serve({ port: PORT }, async (req: Request) => {
             const url = new URL(req.url);
 
